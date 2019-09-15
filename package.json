@@ -1,6 +1,6 @@
 {
   "name": "@myelastic/indexer",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "elastic search indexer for mysql",
   "main": "lib/indexer.js",
   "scripts": {
@@ -55,8 +55,8 @@
   },
   "author": "Anthony Martin",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/anthonymartin/myelastic"
+    "type": "git",
+    "url": "https://github.com/anthonymartin/myelastic"
   },
   "license": "MIT",
   "husky": {
