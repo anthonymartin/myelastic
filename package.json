@@ -54,6 +54,10 @@
     "tslint": "5.16.0"
   },
   "author": "Anthony Martin",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/anthonymartin/myelastic"
+  },
   "license": "MIT",
   "husky": {
     "hooks": {
