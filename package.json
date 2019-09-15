@@ -57,7 +57,6 @@
   "license": "MIT",
   "husky": {
     "hooks": {
-      "post-merge": "(git-branch-is master && HUSKY_SKIP_HOOKS=1 yarn version --minor || (git-branch-is dev && HUSKY_SKIP_HOOKS=1 yarn version --patch)",
       "post-commit": "(git-branch-is develop && HUSKY_SKIP_HOOKS=1 yarn version --patch)"
     }
   }
