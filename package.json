@@ -1,13 +1,12 @@
 {
   "name": "@myelastic/indexer",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "elastic search indexer for mysql",
   "main": "lib/indexer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "prepare": "npm run build",
-    "myelastic": "node lib/cli/myelastic.js",
     "lint": "tslint -p tsconfig.json",
     "postinstall": "node postinstall.js"
   },
@@ -32,26 +31,26 @@
     "@types/underscore": "^1.9.2",
     "@types/yargs": "^13.0.2",
     "dotenv": "^8.1.0",
-    "eslint": "^6.4.0",
     "fs": "0.0.1-security",
     "module-alias": "^2.2.1",
     "moment": "^2.24.0",
     "mysql": "^2.17.1",
-    "ts-node": "8.1.0",
-    "typescript": "3.4.5",
     "underscore": "^1.9.1",
-    "yargs": "^14.0.0",
-    "yarn": "^1.17.3"
+    "yargs": "^14.0.0"
   },
   "_moduleAliases": {
-    "@myelastic": "lib"
+    "@myelastic": "src/lib"
   },
   "devDependencies": {
+    "eslint": "^6.4.0",
     "eslint-config-prettier": "^6.3.0",
     "eslint-plugin-prettier": "^3.1.0",
     "husky": "^3.0.5",
     "prettier": "^1.18.2",
-    "tslint": "5.16.0"
+    "ts-node": "8.1.0",
+    "tslint": "5.16.0",
+    "typescript": "3.4.5",
+    "yarn": "^1.17.3"
   },
   "author": "Anthony Martin",
   "repository": {
@@ -59,6 +58,9 @@
     "url": "https://github.com/anthonymartin/myelastic"
   },
   "license": "MIT",
+  "bin": {
+    "myelastic": "./lib/cli/myelastic.js"
+  },
   "husky": {
     "hooks": {
       "post-commit": "(git-branch-is develop && HUSKY_SKIP_HOOKS=1 yarn version --patch)"
