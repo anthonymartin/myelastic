@@ -1,4 +1,4 @@
-# @esmy/indexer - MySQL to ElasticSearch Indexer
+# @myelastic/indexer - MySQL to ElasticSearch Indexer
 
 A simple but powerful way to index your mysql data to elasticsearch.
 
@@ -12,11 +12,11 @@ A simple but powerful way to index your mysql data to elasticsearch.
 
 ## Installation
 
-`npm install @esmy/indexer`
+`npm install @myelastic/indexer`
 
 or
 
-`yarn add @esmy/indexer`
+`yarn add @myelastic/indexer`
 
 ## Usage
 
@@ -37,7 +37,7 @@ The minimum configuration your indexer needs looks like this:
 Typescript:
 
 ```typescript
-import { Indexer } from '@esmy/indexer';
+import { Indexer } from '@myelastic/indexer';
 
 const config = {
   index: 'invoices',
@@ -50,7 +50,7 @@ new Indexer(config).index().catch(console.log);
 Javascript:
 
 ```javascript
-const { Indexer } = require('@esmy/indexer');
+const { Indexer } = require('@myelastic/indexer');
 
 const config = {
   index: 'invoices',

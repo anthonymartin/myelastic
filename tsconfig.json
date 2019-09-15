@@ -11,7 +11,7 @@
     "moduleResolution": "node",
     "baseUrl": "./src",
     "paths": {
-      "@esmy/*": ["./lib/*"]
+      "@myelastic/*": ["./lib/*"]
     }
   },
   "include": ["src/**/*"]

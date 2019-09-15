@@ -1,5 +1,5 @@
 {
-  "name": "@esmy/indexer",
+  "name": "@myelastic/indexer",
   "version": "1.0.0",
   "description": "elastic search indexer for mysql",
   "main": "lib/indexer.js",
@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "prepare": "npm run build",
-    "esmy": "node lib/cli/esmy.js",
+    "myelastic": "node lib/cli/myelastic.js",
     "lint": "tslint -p tsconfig.json",
     "postinstall": "node postinstall.js"
   },
@@ -44,7 +44,7 @@
     "yarn": "^1.17.3"
   },
   "_moduleAliases": {
-    "@esmy": "lib"
+    "@myelastic": "lib"
   },
   "devDependencies": {
     "prettier": "^1.18.2",

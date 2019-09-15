@@ -1,8 +1,8 @@
 import 'module-alias/register';
 require('dotenv').config();
 import * as _ from 'underscore';
-import mysql from '@esmy/drivers/mysql';
-import client from '@esmy/drivers/elasticsearch';
+import mysql from '@myelastic/drivers/mysql';
+import client from '@myelastic/drivers/elasticsearch';
 
 export class Indexer {
   public indexName: string;
