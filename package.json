@@ -47,11 +47,18 @@
     "@myelastic": "lib"
   },
   "devDependencies": {
-    "prettier": "^1.18.2",
     "eslint-config-prettier": "^6.3.0",
     "eslint-plugin-prettier": "^3.1.0",
-    "tslint": "5.16.0"
+    "prettier": "^1.18.2",
+    "tslint": "5.16.0",
+    "husky": "^3.0.5"
   },
-  "author": "",
-  "license": "MIT"
+  "author": "Anthony Martin",
+  "license": "MIT",
+  "husky": {
+    "hooks": {
+      "post-merge": "(git-branch-is master && HUSKY_SKIP_HOOKS=1 yarn version --minor || (git-branch-is dev && HUSKY_SKIP_HOOKS=1 yarn version --patch)",
+      "post-commit": "(git-branch-is develop && HUSKY_SKIP_HOOKS=1 yarn version --patch)"
+    }
+  }
 }
