@@ -8,6 +8,7 @@
     "build": "tsc",
     "prepare": "npm run build",
     "lint": "tslint -p tsconfig.json",
+    "myelastic": "ts-node src/lib/cli/myelastic.ts",
     "postinstall": "node postinstall.js"
   },
   "keywords": [
