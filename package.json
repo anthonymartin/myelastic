@@ -9,7 +9,7 @@
     "prepare": "npm run build",
     "esmy": "node lib/cli/esmy.js",
     "lint": "tslint -p tsconfig.json",
-    "postinstall": "node $INIT_CWD/node_modules/@esmy/indexer/postinstall.js"
+    "postinstall": "node postinstall.js"
   },
   "keywords": [
     "mysql",
