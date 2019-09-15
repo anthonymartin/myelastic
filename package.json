@@ -1,0 +1,57 @@
+{
+  "name": "@esmy/indexer",
+  "version": "1.0.0",
+  "description": "elastic search indexer for mysql",
+  "main": "lib/indexer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "prepare": "npm run build",
+    "esmy": "node lib/cli/esmy.js",
+    "lint": "tslint -p tsconfig.json",
+    "postinstall": "node $INIT_CWD/node_modules/@esmy/indexer/postinstall.js"
+  },
+  "keywords": [
+    "mysql",
+    "mysql to elasticsearch",
+    "mysql elasticsearch indexer",
+    "elasticsearch",
+    "elastic",
+    "bulk",
+    "indexing",
+    "kibana",
+    "mapping",
+    "search",
+    "client",
+    "index"
+  ],
+  "types": "lib/indexer.d.ts",
+  "dependencies": {
+    "@elastic/elasticsearch": "^7.3.0",
+    "@types/node": "^12.7.5",
+    "@types/underscore": "^1.9.2",
+    "@types/yargs": "^13.0.2",
+    "dotenv": "^8.1.0",
+    "eslint": "^6.4.0",
+    "fs": "0.0.1-security",
+    "module-alias": "^2.2.1",
+    "moment": "^2.24.0",
+    "mysql": "^2.17.1",
+    "ts-node": "8.1.0",
+    "typescript": "3.4.5",
+    "underscore": "^1.9.1",
+    "yargs": "^14.0.0",
+    "yarn": "^1.17.3"
+  },
+  "_moduleAliases": {
+    "@esmy": "lib"
+  },
+  "devDependencies": {
+    "prettier": "^1.18.2",
+    "eslint-config-prettier": "^6.3.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "tslint": "5.16.0"
+  },
+  "author": "",
+  "license": "MIT"
+}
