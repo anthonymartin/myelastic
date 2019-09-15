@@ -1,4 +1,4 @@
-import { Client } from '@elastic/elasticsearch';
+import client from '@myelastic/drivers/elasticsearch';
 
 export default {
   command: "last-indexed [index] [field]",
@@ -14,10 +14,6 @@ export default {
     }
   },
   handler: (yargs) => {
-    const esClient = new Client({
-      node:
-        'https://search-ccmc-es-o5nxg66awk4ocbotfgrspglwxi.us-east-1.es.amazonaws.com'
-    });
   
     let field = yargs.field;
     let index = yargs.index;
@@ -26,7 +22,7 @@ export default {
     async function run() {
       let sort = [{}];
       sort[0][`${field}`] = { order: "desc" };
-      const { body } = await esClient.search({
+      const { body } = await client.search({
         index: index,
         body: {
             _source: field,
