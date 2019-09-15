@@ -4,3 +4,4 @@ node_modules
 /lib/
 /indexers/
 .vscode
+yarn-error.log
