@@ -40,7 +40,7 @@
     "yargs": "^14.0.0"
   },
   "_moduleAliases": {
-    "@myelastic": "src/lib"
+    "@myelastic": "lib"
   },
   "devDependencies": {
     "eslint": "^6.4.0",
