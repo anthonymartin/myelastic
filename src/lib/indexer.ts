@@ -1,11 +1,11 @@
 import 'module-alias/register';
 require('dotenv').config();
 import * as _ from 'underscore';
-import * as moment from "moment";
+import * as moment from 'moment';
 import mysql from '@myelastic/drivers/mysql';
 import elasticSearchClient from '@myelastic/drivers/elasticsearch';
 import lastIndexed from '@myelastic/cli/cmds/lastIndexed';
-
+const humanizeDuration = require('humanize-duration');
 
 export class Indexer {
   public indexName: string;
@@ -16,10 +16,9 @@ export class Indexer {
   protected grouperFn: Function;
   protected batchSize: number = 100;
   protected mutators: Function[] = [];
-  protected createdIndices: Set<string> = new Set;
-  protected groups: Set<string> = new Set;
+  protected createdIndices: IndicesSet = new Set();
+  protected groups: GroupSet = new Set();
   protected id: string;
-
 
   public constructor(config) {
     mysql.connect();
@@ -27,31 +26,36 @@ export class Indexer {
     this.mappings = config.mappings ? config.mappings : this.mappings;
     this.query = config.query ? config.query : this.query;
     this.indexName = config.index ? config.index : this.indexName;
-    this.groupedIndices = config.groupedIndices ? config.groupedIndices : this.groupedIndices;
     this.batchSize = config.batchSize ? config.batchSize : this.batchSize;
     this.id = config.id ? config.id : this.id;
   }
   public async index() {
+    const startTime = new Date().getTime();
     const query = await this.generateQuery();
     const indexer = this;
     mysql.query(query, async function(error, results, fields) {
       if (error) throw error;
-      indexer.bulkIndex(results);
       mysql.end();
+      await indexer.bulkIndex(results);
+      indexer.getDuration(startTime);
     });
   }
-  public getGroup(grouper: Function): this {
-    this.groupedIndices = true;
+  /**
+   * pass a callback which returns the index group that `row` should belong to.
+   * @param grouper(row)
+   */
+  public assignGroup(grouper: Function): this {
     this.grouperFn = grouper;
     return this;
   }
   protected applyGroup(collection): GroupedCollection {
-    const getIndexName = (row) => {
-      return this.grouperFn ? this.getIndex(this.grouperFn(row)) : this.getIndex(null)
+    const getIndexName = row => {
+      return this.grouperFn ? 
+        this.getIndex(this.grouperFn(row)) : this.getIndex(null);
     };
     const indexer = this;
     const groupedBatch = collection.reduce((acc, row) => {
-      let grouped = [ {index: { _index: getIndexName(row) } }, row];
+      let grouped = [{ index: { _index: getIndexName(row) } }, row];
       indexer.groups.add(getIndexName(row));
       acc.push(grouped);
       return acc;
@@ -59,45 +63,42 @@ export class Indexer {
 
     return groupedBatch;
   }
-  public groupByDate(field, format) {
-    this.groupedIndices = true;
-    this.grouperFn = (row) => {
+  public indexByDate(field, format) {
+    this.grouperFn = row => {
       return `${moment(row[field]).format(format)}`;
-    }
+    };
     return this;
   }
   protected async bulkIndex(collection): Promise<this> {
-    if (!this.groupedIndices) {
-      await this.createIndex(null);
-    }
     const batches = _.chunk(collection, this.batchSize);
     for (let batch in batches) {
-      const [groups, transformedBatch] = this.transform(batches[batch]);
-      await this.createIndices(groups);
+      const [indices, transformedBatch] = this.transform(batches[batch]);
+      await this.createIndices(indices);
       console.log(
-        `Indexing batch ${batch} | total batches ${batches.length} | items in batch ${_.size(batches[batch])}
-      `);
-      this.bulk(transformedBatch, batch);
+        `Indexing batch ${batch} | total batches ${
+          batches.length
+        } | items in batch ${_.size(batches[batch])} | batches left `.concat(String(batches.length-1-(Number(batch))))
+      );
+      await this.doBulkIndex(transformedBatch, batch);
     }
     return this;
   }
-  protected async bulk(collection: GroupedCollection, batch) {
+  protected async doBulkIndex(collection: GroupedCollection, batch) {
     const { body: bulkResponse } = await this.client.bulk({
       refresh: true,
       body: _.flatten(collection),
     });
     this.handleResponse(bulkResponse, batch);
   }
-  protected async createIndices(groups: Set<string>) {
+  protected async createIndices(groups: GroupSet) {
     for (const group of groups) {
       await this.createIndex(group);
-    };
+    }
   }
-  protected transform(collection): [Groups, GroupedCollection] {
-      const mutatedBatch = this.applyMutations(collection);
-      const groupedBatch = this.applyGroup(mutatedBatch);
-      return [this.groups, groupedBatch];
-
+  protected transform(collection): [GroupSet, GroupedCollection] {
+    const mutatedBatch = this.applyMutations(collection);
+    const groupedBatch = this.applyGroup(mutatedBatch);
+    return [this.groups, groupedBatch];
   }
   protected async generateQuery(): Promise<string> {
     if ((this.query.match(/{\lastIndexedId\}/) || []).length == 0) {
@@ -123,39 +124,46 @@ export class Indexer {
     return this;
   }
   protected getIndex(group = null): string {
-    if (!this.groupedIndices || !group) {
+    if (!group) {
       return `${this.indexName}`;
     }
     return `${this.indexName}-${group}`;
   }
   protected async getESLastIndexedRecord() {
     let field = this.id ? this.id : 'id';
-    let id = await lastIndexed.handler({ field: field, index: this.indexName + "*"});
+    let id = await lastIndexed.handler({
+      field: field,
+      index: this.indexName + '*',
+    });
     return id ? id : 0;
   }
   protected didNotCreateIndex(name) {
     return !this.createdIndices.has(name);
- }
- protected async createIndex(group=null) {
-  const indexName = this.getIndex(group);
-  if (this.didNotCreateIndex(indexName)) {
+  }
+  protected async createIndex(indexName: string) {
+    if (this.didNotCreateIndex(indexName)) {
       console.log(`Creating Index: ${indexName}`);
-      this.createdIndices.add(this.getIndex(group));
-      await this.client.indices.create({
-          index: this.getIndex(group),
+      const { body } = await this.client.indices.create(
+        {
+          index: indexName,
           body: {
-              mappings: {
-                  properties: this.mappings
-              }
-          }
-      }, { ignore: [400] })
+            mappings: {
+              properties: this.mappings,
+            },
+          },
+        },
+        { ignore: [400] },
+      );
+      try {
+        if (body.acknowledged && body.index == indexName) {
+          this.createdIndices.add(indexName);
+        }
+      } catch (e) {
+        console.log(`There was a problem creating index: ${indexName}`);
+        console.log(e);
+        process.exit();
       }
-}
-  protected getBulkString(collection) {
-    const action = '{"index":{}}';
-    return collection.reduce((agg, curr): string => {
-      return agg.concat(`${action}\n${JSON.stringify(curr)}\n`);
-    }, '');
+    }
   }
   public getIndexName(): string {
     return this.indexName;
@@ -195,11 +203,16 @@ export class Indexer {
       console.log(erroredDocuments);
     }
   }
+  protected getDuration(start) {
+      const end = new Date().getTime();
+      console.log (`✨  Done in: ${humanizeDuration(end-start)}`);
+  }
 }
 
-
-export interface Groups extends Set<string> {}
-export interface GroupedRow { 
-  [index: number]: { index: {_index: string }}, any;
-};
+export interface GroupSet extends Set<string> {}
+export interface IndicesSet extends Set<string> {}
+export interface GroupedRow {
+  [index: number]: { index: { _index: string } };
+  any;
+}
 export interface GroupedCollection extends Array<GroupedRow> {}

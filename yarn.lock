@@ -605,6 +605,11 @@ hosted-git-info@^2.1.4:
   resolved "https://registry.yarnpkg.com/hosted-git-info/-/hosted-git-info-2.8.4.tgz#44119abaf4bc64692a16ace34700fed9c03e2546"
   integrity sha512-pzXIvANXEFrc5oFFXRMkbLPQ2rXRoDERwDLyrcUxGhaZhgP54BBSl9Oheh7Vv0T090cszWBxPjkQQ5Sq1PbBRQ==
 
+humanize-duration@^3.20.1:
+  version "3.20.1"
+  resolved "https://registry.yarnpkg.com/humanize-duration/-/humanize-duration-3.20.1.tgz#e5edf1edcd32ac1e97e71e0e97f02533f664dc45"
+  integrity sha512-r2FR5Tkwo482oDmoutbX22KLzmz83UlWD8KgfQuM+EvxxDS10m2tRgHsKU+M6nFxaDU72YCKmLKi3lYB0CPMnw==
+
 husky@^3.0.5:
   version "3.0.5"
   resolved "https://registry.yarnpkg.com/husky/-/husky-3.0.5.tgz#d7db27c346645a8dc52df02aa534a377ad7925e0"
