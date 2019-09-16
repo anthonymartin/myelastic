@@ -4,10 +4,9 @@ A simple but powerful way to index your mysql data to elasticsearch.
 
 ## Features:
 
-- Easy to get started - just define your query and the name of your index
-- Use `{lastIndexedId}` in your query to get the highest numerical id in the elastic search index. This is automatically mapped to the `id` field in your indexed elastic search document
-- Define your batches using the `setBatch` callback function which allows you define a group for each record.
-- Transform your data before it is indexed using the `addMutator` callback function.
+- Easy to get started with minimum configuration
+- Transform your data before it is indexed using the `addMutator` callback function
+- Query variables: use `{lastIndexedId}` variable in your MySQL query to get the last indexed document of your index
 - Full typescript and javascript support
 
 ## Installation
@@ -30,9 +29,7 @@ mysql_password=
 mysql_database=
 ```
 
-### Simple configuration
-
-The minimum configuration your indexer needs looks like this:
+### Quick Start
 
 Typescript:
 
@@ -64,7 +61,7 @@ new Indexer(config).index().catch(console.log);
 
 ### Mapping
 
-You'll find sometimes you need to explicitly define your mappings for the elastic search indexes. You can define those in your configuration like this:
+You'll sometimes find you need to explicitly define your elasticsearch index mappings. You can define those in your configuration:
 
 ```javascript
 const config = {
@@ -79,7 +76,7 @@ const config = {
 
 ### Mutators
 
-Every row of your query can be passed to a mutator function which allows you to transform the data before it is indexed. As an example, this can be useful if you want to add geolocation date to your index for visualization in Kibana.
+Every row of your query can be passed to a mutator function which allows you to transform the data before it is indexed.
 
 ```javascript
 // our database has an IP, but let's also map the geolocation coordinates for that IP
@@ -89,5 +86,62 @@ const mutator = function (row) => {
 
 new Indexer(config)
 .addMutator(mutator)
-.index().catch(console.log);
+.index();
 ```
+
+### Indexing by Date
+
+Index your data by date and the date in the format you provide will be appended to the index name. e.g. `indexName-2019`
+
+```javascript
+new Indexer(config)
+.indexByDate('date_field', 'YYYY')
+.index();
+```
+
+### Query variables
+
+Use a `{lastIndexedId}` in your query to get the last indexed record for the id field specified in the configuration.
+
+```typescript
+const config = {
+  index: 'invoices',
+  id: 'invoice_id',
+  query: 'select * from invoices where invoice_id > {lastIndexedId}',
+};
+
+new Indexer(config).index().catch(console.log);
+```
+
+### Chained Mutators
+
+Add any number of mutators to transform your data before it is indexed
+
+```javascript
+// our database has an IP, but let's also map the geolocation coordinates for that IP
+const geoLocation = function (row) => {
+  row.geo_location = getCoordinatesFromIP(row.ip);
+};
+
+const timestamp = function (row) => {
+  row.timestamp = new Date();
+};
+
+new Indexer(config)
+.addMutator(geoLocation)
+.addMutator(timestamp)
+.index();
+```
+
+
+
+### Configuration Options
+
+```javascript
+const config = {
+  index: string // the name of your index
+  query:  string // the results of this query will be indexed
+  batchSize: number // defaults to 100
+  id: number | date // defaults to 'id' - the `{lastIndexedId}` query variable is mapped to this field. supports numerical ids and timestamps
+  mappings: {} // @see https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html
+}
