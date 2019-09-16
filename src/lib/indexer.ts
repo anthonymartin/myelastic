@@ -41,15 +41,11 @@ export class Indexer {
     });
   }
   public getGroup(grouper: Function): this {
+    this.groupedIndices = true;
     this.grouperFn = grouper;
     return this;
   }
-  protected getBatchesFromQueryResults(collection) {
-    if (this.batchSize) {
-      return _.chunk(collection, this.batchSize);
-    }
-  }
-  protected applyGroup(collection): GroupedBatch {
+  protected applyGroup(collection): GroupedCollection {
     const getIndexName = (row) => {
       return this.grouperFn ? this.getIndex(this.grouperFn(row)) : this.getIndex(null)
     };
@@ -74,27 +70,30 @@ export class Indexer {
     if (!this.groupedIndices) {
       await this.createIndex(null);
     }
-    const batches = this.getBatchesFromQueryResults(collection);
+    const batches = _.chunk(collection, this.batchSize);
     for (let batch in batches) {
       const [groups, transformedBatch] = this.transform(batches[batch]);
       await this.createIndices(groups);
       console.log(
         `Indexing batch ${batch} | total batches ${batches.length} | items in batch ${_.size(batches[batch])}
       `);
-      const { body: bulkResponse } = await this.client.bulk({
-        refresh: true,
-        body: _.flatten(transformedBatch),
-      });
-      this.handleResponse(bulkResponse, batches[batch]);
+      this.bulk(transformedBatch, batch);
     }
     return this;
+  }
+  protected async bulk(collection: GroupedCollection, batch) {
+    const { body: bulkResponse } = await this.client.bulk({
+      refresh: true,
+      body: _.flatten(collection),
+    });
+    this.handleResponse(bulkResponse, batch);
   }
   protected async createIndices(groups: Set<string>) {
     for (const group of groups) {
       await this.createIndex(group);
     };
   }
-  protected transform(collection): [Groups, GroupedBatch] {
+  protected transform(collection): [Groups, GroupedCollection] {
       const mutatedBatch = this.applyMutations(collection);
       const groupedBatch = this.applyGroup(mutatedBatch);
       return [this.groups, groupedBatch];
@@ -203,4 +202,4 @@ export interface Groups extends Set<string> {}
 export interface GroupedRow { 
   [index: number]: { index: {_index: string }}, any;
 };
-export interface GroupedBatch extends Array<GroupedRow> {}
+export interface GroupedCollection extends Array<GroupedRow> {}
