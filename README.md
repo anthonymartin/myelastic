@@ -1,6 +1,4 @@
-# @myelastic/indexer - MySQL to ElasticSearch Indexer
-
-[@myelastic/indexer github](https://github.com/anthonymartin/myelastic)
+# [@myelastic/indexer - MySQL to ElasticSearch Indexer](https://github.com/anthonymartin/myelastic)
 
 A simple but powerful way to index your mysql data to elasticsearch.
 
