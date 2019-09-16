@@ -2,8 +2,8 @@ import 'module-alias/register';
 require('dotenv').config();
 import * as _ from 'underscore';
 import * as moment from 'moment';
-import mysql from '@myelastic/drivers/mysql';
-import elasticSearchClient from '@myelastic/drivers/elasticsearch';
+import mysql = require("mysql");
+import { Client } from '@elastic/elasticsearch';
 import lastIndexed from '@myelastic/cli/cmds/lastIndexed';
 const humanizeDuration = require('humanize-duration');
 
@@ -18,11 +18,12 @@ export class Indexer {
   protected mutators: Function[] = [];
   protected createdIndices: IndicesSet = new Set();
   protected groups: GroupSet = new Set();
-  protected id: string;
+  protected id: string = 'id';
+  private mysqlConnection;
 
   public constructor(config) {
-    mysql.connect();
-    this.client = elasticSearchClient;
+    this.mysqlConnect();
+    this.client = new Client({ node: process.env.elasticsearch_url });
     this.mappings = config.mappings ? config.mappings : this.mappings;
     this.query = config.query ? config.query : this.query;
     this.indexName = config.index ? config.index : this.indexName;
@@ -33,9 +34,9 @@ export class Indexer {
     const startTime = new Date().getTime();
     const query = await this.generateQuery();
     const indexer = this;
-    mysql.query(query, async function(error, results, fields) {
+    this.mysqlConnection.query(query, async function(error, results, fields) {
       if (error) throw error;
-      mysql.end();
+      indexer.mysqlConnection.end();
       await indexer.bulkIndex(results);
       indexer.getDuration(startTime);
     });
@@ -105,7 +106,6 @@ export class Indexer {
       return this.query;
     }
     let lastId = await this.getESLastIndexedRecord();
-    console.log('Querying by last indexed id: ', `${lastId}`);
     return this.query.replace(/{\lastIndexedId\}/, `${lastId}`);
   }
   protected applyMutations(collection) {
@@ -135,7 +135,9 @@ export class Indexer {
       field: field,
       index: this.indexName + '*',
     });
-    return id ? id : 0;
+    id = id ? id : 0;
+    console.log(`Querying by last indexed ${this.id}: ${id}`);
+    return id;
   }
   protected didNotCreateIndex(name) {
     return !this.createdIndices.has(name);
@@ -206,6 +208,14 @@ export class Indexer {
   protected getDuration(start) {
       const end = new Date().getTime();
       console.log (`✨  Done in: ${humanizeDuration(end-start)}`);
+  }
+  private mysqlConnect() {
+    this.mysqlConnection = mysql.createConnection({
+      host     : process.env.mysql_host,
+      user     : process.env.mysql_user,
+      password : process.env.mysql_password,
+      database : process.env.mysql_database
+    });
   }
 }
 

@@ -36,7 +36,7 @@ export default {
       });
   
       try {
-        id = body.hits.hits[0]._source.id;
+        id = body.hits.hits[0]._source[`${field}`];
       } catch {
         console.log(`Last Indexed ID not found. Does ${index} [index] and ${field} [field] exist?`);
       }
