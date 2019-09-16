@@ -7,7 +7,7 @@ A simple but powerful way to index your mysql data to elasticsearch.
 ## Features:
 
 - Easy to get started - just define your query and the name of your index
-- Use `{lastInsertedId}` in your query to get the highest numerical id in the elastic search index. This is automatically mapped to the `id` field in your indexed elastic search document
+- Use `{lastIndexedId}` in your query to get the highest numerical id in the elastic search index. This is automatically mapped to the `id` field in your indexed elastic search document
 - Define your batches using the `setBatch` callback function which allows you define a group for each record.
 - Transform your data before it is indexed using the `addMutator` callback function.
 - Full typescript and javascript support
@@ -87,7 +87,6 @@ Every row of your query can be passed to a mutator function which allows you to 
 // our database has an IP, but let's also map the geolocation coordinates for that IP
 const mutator = function (row) => {
   row.geo_location = getCoordinatesFromIP(row.ip);
-  return row;
 };
 
 new Indexer(config)

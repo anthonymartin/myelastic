@@ -13,13 +13,14 @@ export default {
       describe: "field to sort by and return"
     }
   },
-  handler: (yargs) => {
+  handler: async (yargs): Promise<number|null> => {
   
     let field = yargs.field;
     let index = yargs.index;
   
   
     async function run() {
+      let id = null;
       let sort = [{}];
       sort[0][`${field}`] = { order: "desc" };
       const { body } = await client.search({
@@ -34,9 +35,14 @@ export default {
           },
       });
   
-      console.log(body.hits.hits[0]._source.id);
+      try {
+        id = body.hits.hits[0]._source.id;
+      } catch {
+        console.log(`Last Indexed ID not found. Does ${index} [index] and ${field} [field] exist?`);
+      }
+      return id;
     }
   
-    run().catch(console.log);
+    return run();
   }
 }

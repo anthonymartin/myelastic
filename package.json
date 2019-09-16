@@ -4,6 +4,7 @@
   "description": "elastic search indexer for mysql",
   "main": "lib/indexer.js",
   "scripts": {
+    "watch": "nodemon --watch 'src/**/*' -e ts --exec yarn run build",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "prepare": "npm run build",
