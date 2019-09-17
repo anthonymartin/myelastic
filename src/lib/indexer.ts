@@ -30,6 +30,7 @@ export class Indexer {
     this.batchSize = config.batchSize ? config.batchSize : this.batchSize;
     this.id = config.id ? config.id : this.id;
   }
+
   public async index() {
     const [indexer, startTime, query] = await this.init();
     this.mysqlConnection.query(query, async function(error, results) {
@@ -52,7 +53,12 @@ export class Indexer {
     this.grouperFn = grouper;
     return this;
   }
-  protected applyGroup(collection): GroupedCollection {
+
+  /**
+   * maps group/indices to collection
+   * @param collection 
+   */
+  private applyGroup(collection): GroupedCollection {
     const indexer = this;
     const getIndexName = row => {
       return this.grouperFn ? 
@@ -65,7 +71,7 @@ export class Indexer {
 
     return groupedCollection;
   }
-  public indexByDate(field, format) {
+  public indexByDate(field: string, format: string) {
     this.grouperFn = row => {
       return `${moment(row[field]).format(format)}`;
     };
