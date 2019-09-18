@@ -20,6 +20,12 @@ export class Indexer {
   protected groups: GroupSet = new Set();
   protected id: string = 'id';
   private mysqlConnection;
+  private stats = {
+    batchesIndexed: 0,
+    recordsIndexed: 0,
+    indexErrors: 0,
+    totalBatches: 0
+  };
 
   public constructor(config) {
     this.mysqlConnect();
@@ -37,7 +43,7 @@ export class Indexer {
       if (error) throw error;
       indexer.mysqlConnection.end();
       await indexer.bulkIndex(results);
-      indexer.displayDuration(startTime);
+      indexer.displayStats(startTime);
     });
   }
 
@@ -68,7 +74,6 @@ export class Indexer {
       indexer.groups.add(getIndexName(row));
       return [{ index: { _index: getIndexName(row) } }, row];
     });
-
     return groupedCollection;
   }
   public indexByDate(field: string, format: string) {
@@ -79,23 +84,26 @@ export class Indexer {
   }
   protected async bulkIndex(collection): Promise<this> {
     const batches = _.chunk(collection, this.batchSize).reverse();
-    for (let i in batches) {
-      const batch = this.getNextBatch(i, batches);
+    while (batches.length > 0) {
+      const batch = this.getNextBatch(batches);
       const [indices, transformedBatch] = this.transform(batch);
       await this.createIndices(indices);
       await this.doBulkIndex(transformedBatch, batch);
     }
     return this;
   }
-  protected getNextBatch(batchNumber, batches) {
-    console.log(
-      `Indexing batch ${batchNumber} | total batches left ${
-        batches.length
-      } | items in batch ${batches[batches.length-1].length}`
-    );
+  private getNextBatch(batches) {
+    this.stats.totalBatches = !this.stats.totalBatches ? 
+      batches.length :  this.stats.totalBatches; // only set the total count on first iteration
     return batches.pop();
   }
+  private displayStatus(collection) {
+    console.log(
+      `Indexing batch ${this.stats.batchesIndexed+1} | items in batch ${collection.length} | total batches left ${this.stats.totalBatches - (this.stats.batchesIndexed + 1)}`
+    );
+  }
   protected async doBulkIndex(collection: GroupedCollection, batch) {
+    this.displayStatus(collection);
     const { body: bulkResponse } = await this.client.bulk({
       refresh: true,
       body: _.flatten(collection),
@@ -204,13 +212,20 @@ export class Indexer {
             operation: collection[i * 2],
             document: collection[i * 2 + 1],
           });
+          this.stats.indexErrors += 1;
+        } else {
+          this.stats.recordsIndexed += 1;
         }
       });
       console.log(erroredDocuments);
-    }
+    } else {
+      this.stats.batchesIndexed += 1;
+      this.stats.recordsIndexed += collection.length;
+    } 
   }
-  protected displayDuration(start) {
+  protected displayStats(start) {
       const end = new Date().getTime();
+      console.log(this.stats);
       console.log (`✨  Done in: ${humanizeDuration(end-start)}`);
   }
   private mysqlConnect() {
