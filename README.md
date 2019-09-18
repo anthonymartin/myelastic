@@ -41,7 +41,7 @@ const config = {
   query: 'select * from invoices',
 };
 
-new Indexer(config).index().catch(console.log);
+new Indexer(config).start();
 ```
 
 Javascript:
@@ -54,7 +54,7 @@ const config = {
   query: 'select * from invoices',
 };
 
-new Indexer(config).index().catch(console.log);
+new Indexer(config).start();
 ```
 
 ## Adanced Configuration
@@ -85,8 +85,8 @@ const mutator = function (row) => {
 };
 
 new Indexer(config)
-.addMutator(mutator)
-.index();
+  .addMutator(mutator)
+  .start();
 ```
 
 ### Indexing by Date
@@ -95,8 +95,8 @@ Index your data by date and the date in the format you provide will be appended 
 
 ```javascript
 new Indexer(config)
-.indexByDate('date_field', 'YYYY')
-.index();
+  .indexByDate('date_field', 'YYYY')
+  .start();
 ```
 
 ### Query variables
@@ -110,7 +110,8 @@ const config = {
   query: 'select * from invoices where invoice_id > {lastIndexedId}',
 };
 
-new Indexer(config).index().catch(console.log);
+new Indexer(config)
+  .start();
 ```
 
 ### Chained Mutators
@@ -128,9 +129,9 @@ const timestamp = function (row) => {
 };
 
 new Indexer(config)
-.addMutator(geoLocation)
-.addMutator(timestamp)
-.index();
+ .addMutator(geoLocation)
+ .addMutator(timestamp)
+ .start();
 ```
 
 

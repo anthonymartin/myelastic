@@ -46,6 +46,9 @@ export class Indexer {
       indexer.displayStats(startTime);
     });
   }
+  public async start() {
+    return this.index();
+  }
 
   private async init(): Promise<[this, number, string]> {
     console.log(`Starting index of ${this.indexName}`);
