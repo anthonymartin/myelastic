@@ -1,10 +1,8 @@
-import 'module-alias/register';
-require('dotenv').config();
 import * as _ from 'underscore';
 import * as moment from 'moment';
 import mysql = require("mysql");
 import { Client } from '@elastic/elasticsearch';
-import lastIndexed from '@myelastic/cli/cmds/lastIndexed';
+import lastIndexed from './cli/cmds/lastIndexed';
 const humanizeDuration = require('humanize-duration');
 
 export class Indexer {
@@ -47,7 +45,7 @@ export class Indexer {
     });
   }
   public async start() {
-    return this.index();
+    this.index();
   }
 
   private async init(): Promise<[this, number, string]> {

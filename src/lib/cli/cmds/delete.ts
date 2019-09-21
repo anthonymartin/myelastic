@@ -1,4 +1,4 @@
-import client from '@myelastic/drivers/elasticsearch';
+import client from '../../drivers/elasticsearch';
 export default {
   command: "delete [index]",
   desc: "delete an index",
