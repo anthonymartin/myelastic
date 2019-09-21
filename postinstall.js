@@ -28,7 +28,7 @@ const copyCliFile = function () {
 const setDotEnvLocation = function () {
   const dotEnv = cwd + '/.env';
   const main = cwd + "/node_modules/@myelastic/indexer/lib/indexer.js";
-  const requireDotEnv = `require('dotenv').config({ path: __dirname + '../../../../.env' });`;
+  const requireDotEnv = `require('dotenv').config({ path: __dirname + '/../../../../.env' });`;
   if (fs.existsSync(dotEnv) && fs.existsSync(main) && !fs.readFileSync(main).toString().match(/require\('dotenv'\)/gm)) {
     var mainLineByLine = require('fs').readFileSync(main).toString().match(/^.+$/gm);
     mainLineByLine[1] = mainLineByLine[1].concat(`\n${requireDotEnv}\n`);
