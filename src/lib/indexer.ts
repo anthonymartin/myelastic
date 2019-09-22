@@ -19,6 +19,7 @@ export class Indexer implements IndexerConfig {
   protected mutators: Function[] = [];
   protected createdIndices: IndicesSet = new Set();
   protected groups: GroupSet = new Set();
+  private deletedIndices = new Set();
   private reduce: Function;
   private useReducer: boolean;
   private mysqlConnection;
@@ -131,15 +132,16 @@ export class Indexer implements IndexerConfig {
   }
   private async createIndices(groups: GroupSet) {
     for (const index of groups) {
-      if (this.reindex) {
+      if (this.reindex && !this.deletedIndices.has(index)) {
         await this.deleteIndex(index);
       }
       await this.createIndex(index);
     }
   }
 
-  private deleteIndex(group) {
-    this.client.indices.delete({index: group})
+  private deleteIndex(index) {
+    this.deletedIndices.add(index)
+    this.client.indices.delete({index: index})
   }
 
   /**
