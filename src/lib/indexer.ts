@@ -8,7 +8,7 @@ const humanizeDuration = require('humanize-duration');
 
 
 export class Indexer implements IndexerConfig {
-  public index: string; // alias for indexname
+  public index: string;q // alias for indexname
   public query: string;
   public mappings: Map<string, any> | null = null;
   public batchSize: number = 100;
@@ -27,7 +27,7 @@ export class Indexer implements IndexerConfig {
     totalBatches: 0
   };
 
-  public constructor(config: IndexerConfig) {
+  public constructor(config) {
     this.mysqlConnect();
     this.setConfigValues(config);
     this.client = new Client({ node: process.env.elasticsearch_url });
