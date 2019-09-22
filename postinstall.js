@@ -2,44 +2,63 @@
 const fs = require('fs');
 
 const cwd = process.env.INIT_CWD
-const binDir = cwd + "/bin";
-const envFile = cwd + "/node_modules/@myelastic/indexer/.env.example";
-const cliFile = cwd + "/node_modules/@myelastic/indexer/lib/cli/myelastic.js";
 
-const copyEnvFile = function () {
-  if (fs.existsSync(cwd + "/.env")) {
-    // let the user add their own environment variables
-  } else {
-    fs.copyFileSync(envFile, cwd + "/.env");
-  }
+const getTemplateEnv = () => {
+  const envFile = cwd + "/node_modules/@myelastic/indexer/.env.example";
+  return envFile;
 }
 
-const copyCliFile = function () {
-  if (fs.existsSync(binDir)) {
-    fs.copyFileSync(cliFile, binDir + '/myelastic');
-    fs.chmodSync(binDir + '/myelastic', "755");
-  } else {
-    fs.mkdirSync(binDir);
-    fs.copyFileSync(cliFile, binDir + '/myelastic');
-    fs.chmodSync(binDir + '/myelastic', "755");
-  }
-}
-
-const setDotEnvLocation = function () {
-  const dotEnv = cwd + '/.env';
+const getMainFile = () => {
   const main = cwd + "/node_modules/@myelastic/indexer/lib/indexer.js";
-  const requireDotEnv = `require('dotenv').config({ path: __dirname + '/../../../../.env' });`;
-  if (fs.existsSync(dotEnv) && fs.existsSync(main) && !fs.readFileSync(main).toString().match(/require\('dotenv'\)/gm)) {
-    var mainLineByLine = require('fs').readFileSync(main).toString().match(/^.+$/gm);
-    mainLineByLine[1] = mainLineByLine[1].concat(`\n${requireDotEnv}\n`);
-    fs.writeFileSync(main, mainLineByLine.join("\n"));
+  return main;
+}
+const getCliFile = () => {
+  const cli = cwd + "/node_modules/@myelastic/indexer/lib/cli/myelastic.js";
+  return cli;
+}
+
+const copyFile = function (source, target, overwrite=false, executable=false) {
+  if (fs.existsSync(target) && overwrite) {
+    fs.copyFileSync(source, target);
+    if (executable) {
+      fs.chmodSync(target, "755");
+    }
+  } else {
+    // do nothing since we don't want to overwrite a file
+  }
+}
+
+const requireDotEnv = function (file, envReference) {
+  const source = cwd + '/.env';
+  const requireDotEnv = `require('dotenv').config({ path: ${envReference} });`;
+  if (fs.existsSync(source) && fs.existsSync(file) && !fs.readFileSync(file).toString().match(/require\('dotenv'\)/gm)) {
+    var fileLineByLine = fs.readFileSync(file).toString().match(/^.+$/gm);
+    fileLineByLine[1] = fileLineByLine[1].concat(`\n${requireDotEnv}\n`);
+    fs.writeFileSync(file, fileLineByLine.join("\n"));
   }
 };
 
+const copyEnvAndSetLocationInMain = () => {
+  const source = getTemplateEnv();
+  const target = cwd + "/.env";
+  copyFile(source, target, false);
+  requireDotEnv(getMainFile(), "__dirname + '/../../../../.env'");
+}
+
+const setCliEnvLocation = () => {
+  const target  = getCliFile();
+  requireDotEnv(target, "__dirname + '/../../../../../.env'");
+}
+const createBinDir = () => {
+  if(!fs.existsSync(cwd + '/bin')) {
+    fs.mkdirSync(cwd + '/bin');
+  }
+}
+
 try {
-  copyEnvFile();
-  setDotEnvLocation();
-  // copyCliFile();
+  console.log('doing more stuff');
+  copyEnvAndSetLocationInMain();
+  setCliEnvLocation();
 } catch (e) {
   console.log(e);
 }
