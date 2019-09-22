@@ -1,11 +1,9 @@
-import * as _ from 'underscore';
+import * as _ from 'lodash';
 import * as moment from 'moment';
 import mysql = require("mysql");
 import { Client } from '@elastic/elasticsearch';
 import lastIndexed from './cli/cmds/lastIndexed';
 const humanizeDuration = require('humanize-duration');
-
-
 
 export class Indexer implements IndexerConfig {
   public index: string; // alias for indexname
@@ -13,12 +11,15 @@ export class Indexer implements IndexerConfig {
   public mappings: Map<string, any> | null = null;
   public batchSize: number = 100;
   public id: string = 'id';
+  public explicitMapping: boolean = false;
   protected indexName: string;
   protected client;
   protected grouperFn: Function;
   protected mutators: Function[] = [];
   protected createdIndices: IndicesSet = new Set();
   protected groups: GroupSet = new Set();
+  private reduce: Function;
+  private useReducer: boolean;
   private mysqlConnection;
   private stats = {
     batchesIndexed: 0,
@@ -35,6 +36,7 @@ export class Indexer implements IndexerConfig {
   }
   private setConfigValues(config: IndexerConfig) {
     this.mappings = config.mappings ? config.mappings : this.mappings;
+    this.explicitMapping = config.explicitMapping ? config.explicitMapping : this.explicitMapping;
     this.query = config.query ? config.query : this.query;
     this.indexName = config.index ? config.index : this.indexName;
     this.batchSize = config.batchSize ? config.batchSize : this.batchSize;
@@ -44,6 +46,9 @@ export class Indexer implements IndexerConfig {
     const [indexer, startTime, query] = await this.init();
     this.mysqlConnection.query(query, async function(error, results) {
       if (error) throw error;
+      if (indexer.useReducer) {
+        results = indexer.reduce(results);
+      }
       indexer.mysqlConnection.end();
       await indexer.bulkIndex(results);
       indexer.displayStats(startTime);
@@ -63,6 +68,12 @@ export class Indexer implements IndexerConfig {
     return this;
   }
 
+  public useCollectionReducer(reducer): this {
+    this.useReducer = true;
+    this.reduce = reducer;
+    return this;
+  }
+
   /**
    * maps group/indices to collection
    * @param collection 
@@ -74,6 +85,9 @@ export class Indexer implements IndexerConfig {
         this.getIndex(this.grouperFn(row)) : this.getIndex(null);
     };
     const groupedCollection = collection.map((row) => {
+      if (this.explicitMapping == true) {
+        row = _.pick(row, Object.keys(this.mappings));
+      }
       indexer.groups.add(getIndexName(row));
       return [{ index: { _index: getIndexName(row) } }, row];
     });
@@ -246,6 +260,7 @@ export interface IndexerConfig {
   index: string;
   batchSize: number,
   id: string;
+  explicitMapping: boolean;
 }
 export interface GroupSet extends Set<string> {}
 export interface IndicesSet extends Set<string> {}
