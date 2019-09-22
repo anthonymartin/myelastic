@@ -139,9 +139,12 @@ export class Indexer implements IndexerConfig {
     }
   }
 
-  private deleteIndex(index) {
+  private async deleteIndex(index) {
     this.deletedIndices.add(index)
-    this.client.indices.delete({index: index})
+    const { body } = await this.client.indices.delete({index: index})
+    if (body.acknowledged == true) {
+      console.log(`Deleted Index ${index}`);
+    }
   }
 
   /**
