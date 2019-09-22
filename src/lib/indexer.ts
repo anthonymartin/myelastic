@@ -12,6 +12,7 @@ export class Indexer implements IndexerConfig {
   public batchSize: number = 100;
   public id: string = 'id';
   public explicitMapping: boolean = false;
+  public reindex: boolean = false;
   protected indexName: string;
   protected client;
   protected grouperFn: Function;
@@ -40,6 +41,7 @@ export class Indexer implements IndexerConfig {
     this.query = config.query ? config.query : this.query;
     this.indexName = config.index ? config.index : this.indexName;
     this.batchSize = config.batchSize ? config.batchSize : this.batchSize;
+    this.reindex = config.reindex ? config.reindex : this.reindex;
     this.id = config.id ? config.id : this.id;
   }
   public async start() {
@@ -127,11 +129,19 @@ export class Indexer implements IndexerConfig {
     });
     this.handleResponse(bulkResponse, batch);
   }
-  protected async createIndices(groups: GroupSet) {
-    for (const group of groups) {
-      await this.createIndex(group);
+  private async createIndices(groups: GroupSet) {
+    for (const index of groups) {
+      if (this.reindex) {
+        await this.deleteIndex(index);
+      }
+      await this.createIndex(index);
     }
   }
+
+  private deleteIndex(group) {
+    this.client.indices.delete({index: group})
+  }
+
   /**
    * Applies mutations and groups each item in the collection with their associated index group
    * @param collection 
@@ -261,6 +271,7 @@ export interface IndexerConfig {
   batchSize: number,
   id: string;
   explicitMapping: boolean;
+  reindex: boolean;
 }
 export interface GroupSet extends Set<string> {}
 export interface IndicesSet extends Set<string> {}
