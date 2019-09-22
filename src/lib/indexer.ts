@@ -8,7 +8,7 @@ const humanizeDuration = require('humanize-duration');
 
 
 export class Indexer implements IndexerConfig {
-  public index: string;q // alias for indexname
+  public index: string; // alias for indexname
   public query: string;
   public mappings: Map<string, any> | null = null;
   public batchSize: number = 100;
