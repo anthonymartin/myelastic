@@ -56,7 +56,6 @@ const createBinDir = () => {
 }
 
 try {
-  console.log('doing more stuff');
   copyEnvAndSetLocationInMain();
   setCliEnvLocation();
 } catch (e) {
