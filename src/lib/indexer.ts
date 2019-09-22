@@ -5,18 +5,20 @@ import { Client } from '@elastic/elasticsearch';
 import lastIndexed from './cli/cmds/lastIndexed';
 const humanizeDuration = require('humanize-duration');
 
-export class Indexer {
-  public indexName: string;
-  public groupedIndices = false; // if true, will append group to index name. e.g. indexName-2019-01-23
+
+
+export class Indexer implements IndexerConfig {
+  public index: string; // alias for indexname
+  public query: string;
+  public mappings: Map<string, any> | null = null;
+  public batchSize: number = 100;
+  public id: string = 'id';
+  protected indexName: string;
   protected client;
-  protected query: string;
-  protected mappings: Map<string, any> | null = null;
   protected grouperFn: Function;
-  protected batchSize: number = 100;
   protected mutators: Function[] = [];
   protected createdIndices: IndicesSet = new Set();
   protected groups: GroupSet = new Set();
-  protected id: string = 'id';
   private mysqlConnection;
   private stats = {
     batchesIndexed: 0,
@@ -25,17 +27,20 @@ export class Indexer {
     totalBatches: 0
   };
 
-  public constructor(config) {
+  public constructor(config: IndexerConfig) {
     this.mysqlConnect();
+    this.setConfigValues(config);
     this.client = new Client({ node: process.env.elasticsearch_url });
+
+  }
+  private setConfigValues(config: IndexerConfig) {
     this.mappings = config.mappings ? config.mappings : this.mappings;
     this.query = config.query ? config.query : this.query;
     this.indexName = config.index ? config.index : this.indexName;
     this.batchSize = config.batchSize ? config.batchSize : this.batchSize;
     this.id = config.id ? config.id : this.id;
   }
-
-  public async index() {
+  public async start() {
     const [indexer, startTime, query] = await this.init();
     this.mysqlConnection.query(query, async function(error, results) {
       if (error) throw error;
@@ -43,9 +48,6 @@ export class Indexer {
       await indexer.bulkIndex(results);
       indexer.displayStats(startTime);
     });
-  }
-  public async start() {
-    this.index();
   }
 
   private async init(): Promise<[this, number, string]> {
@@ -238,7 +240,13 @@ export class Indexer {
     });
   }
 }
-
+export interface IndexerConfig {
+  mappings: Map<string, any>,
+  query: string,
+  index: string;
+  batchSize: number,
+  id: string;
+}
 export interface GroupSet extends Set<string> {}
 export interface IndicesSet extends Set<string> {}
 export interface GroupedRow {
