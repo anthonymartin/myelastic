@@ -28,11 +28,11 @@ export class Indexer {
   public constructor(config) {
     this.mysqlConnect();
     this.client = new Client({ node: process.env.elasticsearch_url });
-    this.mappings = config.mappings ? config.mappings : this.mappings;
-    this.query = config.query ? config.query : this.query;
-    this.indexName = config.index ? config.index : this.indexName;
-    this.batchSize = config.batchSize ? config.batchSize : this.batchSize;
-    this.id = config.id ? config.id : this.id;
+    this.mappings = config.mappings || this.mappings;
+    this.query = config.query || this.query;
+    this.indexName = config.index || this.indexName;
+    this.batchSize = config.batchSize || this.batchSize;
+    this.id = config.id || this.id;
   }
 
   public async index() {
