@@ -31,19 +31,18 @@ export class Indexer implements IndexerConfig {
   };
 
   public constructor(config) {
-    this.mysqlConnect();
     this.setConfigValues(config);
+    this.mysqlConnect();
     this.client = new Client({ node: process.env.elasticsearch_url });
-
   }
   private setConfigValues(config: IndexerConfig) {
-    this.mappings = config.mappings ? config.mappings : this.mappings;
-    this.explicitMapping = config.explicitMapping ? config.explicitMapping : this.explicitMapping;
-    this.query = config.query ? config.query : this.query;
-    this.indexName = config.index ? config.index : this.indexName;
-    this.batchSize = config.batchSize ? config.batchSize : this.batchSize;
-    this.reindex = config.reindex ? config.reindex : this.reindex;
-    this.id = config.id ? config.id : this.id;
+    this.mappings = config.mappings || this.mappings;
+    this.explicitMapping = config.explicitMapping || this.explicitMapping;
+    this.query = config.query || this.query;
+    this.indexName = config.index || this.indexName;
+    this.batchSize = config.batchSize || this.batchSize;
+    this.reindex = config.reindex || this.reindex;
+    this.id = config.id || this.id;
   }
   public async start() {
     const [indexer, startTime, query] = await this.init();
