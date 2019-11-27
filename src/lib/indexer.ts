@@ -159,8 +159,7 @@ export class Indexer implements IndexerConfig {
     if ((this.query.match(/{\lastIndexedId\}/) || []).length == 0) {
       return this.query;
     }
-    let lastId = await this.getESLastIndexedRecord();
-    return this.query.replace(/{\lastIndexedId\}/, `${lastId}`);
+    return this.query.replace(/{\lastIndexedId\}/, await this.getESLastIndexedRecord());
   }
   protected applyMutations(collection) {
     if (this.mutators.length == 0) return collection;
@@ -181,12 +180,10 @@ export class Indexer implements IndexerConfig {
     return `${this.indexName}-${group}`;
   }
   protected async getESLastIndexedRecord() {
-    let field = this.id ? this.id : 'id';
-    let id = await lastIndexed.handler({
-      field: field,
+    const id = await lastIndexed.handler({
+      field: this.id,
       index: this.indexName + '*',
-    });
-    id = id ? id : 0;
+    }) || 0;
     console.log(`Querying by last indexed ${this.id}: ${id}`);
     return id;
   }
