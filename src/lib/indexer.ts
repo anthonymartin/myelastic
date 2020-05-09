@@ -179,13 +179,13 @@ export class Indexer implements IndexerConfig {
       return `${this.indexName}`;
     return `${this.indexName}-${group}`;
   }
-  protected async getESLastIndexedRecord() {
+  protected async getESLastIndexedRecord(): Promise<string> {
     const id = await lastIndexed.handler({
       field: this.id,
       index: this.indexName + '*',
     }) || 0;
     console.log(`Querying by last indexed ${this.id}: ${id}`);
-    return id;
+    return `${id}`;
   }
   protected didNotCreateIndex(name) {
     return !this.createdIndices.has(name);
