@@ -1,6 +1,6 @@
-# [@myelastic/indexer - MySQL to ElasticSearch Indexer](https://github.com/anthonymartin/myelastic)
+# [@myelastic/indexer - ElasticSearch Indexer for MySQL and MongoDB](https://github.com/anthonymartin/myelastic)
 
-A simple but powerful way to index your mysql data to elasticsearch.
+A simple but powerful way to create elasticsearch indexes from your MySQL and MongoDB data. This package will save you the hassle of writing your elasticsearch import scripts from scratch. This indexer offers a declarative configuration and easily extensible interface to make indexing data from MySQL or MongoDB a breeze.
 
 ## Features:
 
@@ -23,10 +23,16 @@ or
 
 ```ini
 elasticsearch_url=
+
+// mysql
 mysql_host=
 mysql_user=
 mysql_password=
 mysql_database=
+
+// mongo
+mongodb_url=
+mongodb_database=
 ```
 
 ### Quick Start
@@ -55,6 +61,29 @@ const config = {
 };
 
 new Indexer(config).start();
+```
+
+## MongoDB example
+
+First, make sure your environment variables are set:
+```
+mongodb_url=
+mongodb_database=
+```
+
+Your indexer may look like this:
+
+```typescript
+import { Indexer } from '@myelastic/indexer';
+const config = {
+  index: 'users', // this will be the name of the index in elasticsearch
+  collection: 'users', // this is the name of the mongodb collection we want to index
+  batchSize: 1000, // how many documents to process at once
+  query: {}, // the filter for your query: @see https://www.npmjs.com/package/mongodb#find-documents-with-a-query-filter
+};
+
+new Indexer(config)
+.start();
 ```
 
 ## Adanced Configuration
@@ -142,6 +171,7 @@ new Indexer(config)
 const config = {
   index: string // the name of your index
   query:  string // the results of this query will be indexed
+  collection: string // the name of the mongodb collection
   batchSize: number // defaults to 100
   id: number | date // defaults to 'id' - the `{lastIndexedId}` query variable is mapped to this field. supports numerical ids and timestamps
   mappings: {} // @see https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html
