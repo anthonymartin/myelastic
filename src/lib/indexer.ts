@@ -1,5 +1,5 @@
 require('dotenv').config({ path: require('find-config')('.env') });
-import * as _ from 'lodash';
+import { pick, chunk, flatten } from 'lodash';
 import * as moment from 'moment';
 import { Client } from '@elastic/elasticsearch';
 import lastIndexed from './cli/cmds/lastIndexed';
@@ -93,7 +93,7 @@ export class Indexer implements IndexerConfig {
     };
     const groupedCollection = collection.map((row) => {
       if (this.explicitMapping == true) {
-        row = _.pick(row, Object.keys(this.mappings));
+        row = pick(row, Object.keys(this.mappings));
       }
       indexer.groups.add(getIndexName(row));
       return [{ index: { _index: getIndexName(row) } }, row];
@@ -107,7 +107,7 @@ export class Indexer implements IndexerConfig {
     return this;
   }
   protected async bulkIndex(collection): Promise<this> {
-    const batches = _.chunk(collection, this.batchSize).reverse();
+    const batches = chunk(collection, this.batchSize).reverse();
     while (batches.length > 0) {
       const batch = this.getNextBatch(batches);
       const [indices, transformedBatch] = this.transform(batch);
@@ -131,7 +131,7 @@ export class Indexer implements IndexerConfig {
     this.displayStatus(collection);
     const { body: bulkResponse } = await this.client.bulk({
       refresh: true,
-      body: _.flatten(collection),
+      body: flatten(collection),
     });
     this.handleResponse(bulkResponse, batch);
   }
@@ -266,7 +266,7 @@ export class Indexer implements IndexerConfig {
       console.log (`✨  Done in: ${humanizeDuration(end-start)}`);
   }
   protected async connect() {
-    if (process.env.mongodb_url) {
+    if (this.collection) {
       const mongo = MongoDBSource.getInstance();
       await mongo.connect();
       this.connection = mongo;

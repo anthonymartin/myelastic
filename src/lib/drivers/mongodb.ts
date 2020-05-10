@@ -7,7 +7,7 @@ export class MongoDBSource implements DataSource {
   private constructor() {
 
   }
-  public async connect(){
+  public async connect(): Promise<MongoClient> {
     const self = this;
     console.log("Connecting to MONGO");
     return new Promise((resolve, reject) => {
