@@ -1,8 +1,11 @@
-import * as _ from 'lodash';
+require('dotenv').config({ path: require('find-config')('.env') });
+import { pick, chunk, flatten } from 'lodash';
 import * as moment from 'moment';
-import mysql = require("mysql");
 import { Client } from '@elastic/elasticsearch';
 import lastIndexed from './cli/cmds/lastIndexed';
+import { MySQLDataSource } from './drivers/mysql';
+import { MongoDBSource } from './drivers/mongodb';
+import { DataSource } from './drivers/datasource';
 const humanizeDuration = require('humanize-duration');
 
 export class Indexer implements IndexerConfig {
@@ -13,6 +16,7 @@ export class Indexer implements IndexerConfig {
   public id: string = 'id';
   public explicitMapping: boolean = false;
   public reindex: boolean = false;
+  public collection: string | null = null;
   protected indexName: string;
   protected client;
   protected grouperFn: Function;
@@ -22,7 +26,7 @@ export class Indexer implements IndexerConfig {
   private deletedIndices = new Set();
   private reduce: Function;
   private useReducer: boolean;
-  private mysqlConnection;
+  private connection: DataSource;
   private stats = {
     batchesIndexed: 0,
     recordsIndexed: 0,
@@ -32,11 +36,11 @@ export class Indexer implements IndexerConfig {
 
   public constructor(config) {
     this.setConfigValues(config);
-    this.mysqlConnect();
     this.client = new Client({ node: process.env.elasticsearch_url });
   }
   private setConfigValues(config: IndexerConfig) {
     this.mappings = config.mappings || this.mappings;
+    this.collection = config.collection || this.collection;
     this.explicitMapping = config.explicitMapping || this.explicitMapping;
     this.query = config.query || this.query;
     this.indexName = config.index || this.indexName;
@@ -46,18 +50,19 @@ export class Indexer implements IndexerConfig {
   }
   public async start() {
     const [indexer, startTime, query] = await this.init();
-    this.mysqlConnection.query(query, async function(error, results) {
+    this.connection.query(query, async function(error, results) {
       if (error) throw error;
       if (indexer.useReducer) {
         results = indexer.reduce(results);
       }
-      indexer.mysqlConnection.end();
+      indexer.connection.end();
       await indexer.bulkIndex(results);
       indexer.displayStats(startTime);
-    });
+    }, this.collection);
   }
 
   private async init(): Promise<[this, number, string]> {
+    await this.connect();
     console.log(`Starting index of ${this.indexName}`);
     return [this, new Date().getTime(), await this.generateQuery()];
   }
@@ -88,7 +93,7 @@ export class Indexer implements IndexerConfig {
     };
     const groupedCollection = collection.map((row) => {
       if (this.explicitMapping == true) {
-        row = _.pick(row, Object.keys(this.mappings));
+        row = pick(row, Object.keys(this.mappings));
       }
       indexer.groups.add(getIndexName(row));
       return [{ index: { _index: getIndexName(row) } }, row];
@@ -102,7 +107,7 @@ export class Indexer implements IndexerConfig {
     return this;
   }
   protected async bulkIndex(collection): Promise<this> {
-    const batches = _.chunk(collection, this.batchSize).reverse();
+    const batches = chunk(collection, this.batchSize).reverse();
     while (batches.length > 0) {
       const batch = this.getNextBatch(batches);
       const [indices, transformedBatch] = this.transform(batch);
@@ -125,7 +130,7 @@ export class Indexer implements IndexerConfig {
     this.displayStatus(collection);
     const { body: bulkResponse } = await this.client.bulk({
       refresh: true,
-      body: _.flatten(collection),
+      body: flatten(collection),
     });
     this.handleResponse(bulkResponse, batch);
   }
@@ -156,6 +161,9 @@ export class Indexer implements IndexerConfig {
     return [this.groups, groupedCollection];
   }
   protected async generateQuery(): Promise<string> {
+    if (typeof this.query !== 'string') {
+      return this.query;
+    }
     if ((this.query.match(/{\lastIndexedId\}/) || []).length == 0) {
       return this.query;
     }
@@ -256,18 +264,22 @@ export class Indexer implements IndexerConfig {
       console.log(this.stats);
       console.log (`✨  Done in: ${humanizeDuration(end-start)}`);
   }
-  private mysqlConnect() {
-    this.mysqlConnection = mysql.createConnection({
-      host     : process.env.mysql_host,
-      user     : process.env.mysql_user,
-      password : process.env.mysql_password,
-      database : process.env.mysql_database
-    });
+  protected async connect() {
+    if (this.collection) {
+      const mongo = MongoDBSource.getInstance();
+      await mongo.connect();
+      this.connection = mongo;
+    } else {
+      this.connection = new MySQLDataSource();
+    }
   }
+
 }
+
 export interface IndexerConfig {
-  mappings: Map<string, any>,
+  mappings: Map<string, any> | null,
   query: string,
+  collection: string | null, // used for mongo collection queries
   index: string;
   batchSize: number,
   id: string;
