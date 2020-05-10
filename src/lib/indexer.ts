@@ -122,7 +122,6 @@ export class Indexer implements IndexerConfig {
     return batches.pop();
   }
   private displayStatus(collection) {
-    process.stdout.clearLine(0);
     console.log(
       `Indexing batch ${this.stats.batchesIndexed+1} | items in batch ${collection.length} | total batches left ${this.stats.totalBatches - (this.stats.batchesIndexed + 1)}`
     );
