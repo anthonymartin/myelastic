@@ -7,19 +7,10 @@ export class MongoDBSource implements DataSource {
   private constructor() {
 
   }
-  public async connect(): Promise<MongoClient> {
-    const self = this;
-    console.log("Connecting to MONGO");
-    return new Promise((resolve, reject) => {
-      MongoClient.connect(process.env.mongodb_url, function(err, client) {
-        self.client = client;
-        if (err) reject(err);
-        console.log("Connected to MONGO");
-        return resolve(client);
-      });
-      setTimeout(() => reject(new Error("Timeout exceeded")), 5000);
-    }); 
-
+  public async connect(): Promise<void> {
+    console.log("connecting to mongo");
+    this.client = await (new MongoClient(process.env.mongodb_url, { useUnifiedTopology: true })).connect();
+    console.log("connected to mongo");
   }
   public static getInstance(): MongoDBSource {
       if (MongoDBSource._instance) {
