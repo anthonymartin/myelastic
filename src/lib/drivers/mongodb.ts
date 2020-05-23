@@ -27,7 +27,7 @@ export class MongoDBSource implements DataSource {
   ) {
       try {
         console.log("querying mongo");
-        const db = MongoDBSource.getInstance().client.db(process.env.mongodb_database);
+        const db = this.client.db(process.env.mongodb_database);
         const collection = db.collection(collectionName);
         collection.find(query).toArray((err, docs) => {
             if (err) 
