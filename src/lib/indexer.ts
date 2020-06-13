@@ -42,6 +42,7 @@ export class Indexer {
         indexer.datasource.end();
         await indexer.bulkIndex(results);
         indexer.displayStats(startTime);
+        process.exit(0);
       },
       this.config.collection,
     );
