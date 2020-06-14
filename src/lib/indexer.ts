@@ -39,7 +39,6 @@ export class Indexer {
         if (indexer.config.useReducer) {
           results = indexer.reduce(results);
         }
-        indexer.datasource.end();
         await indexer.bulkIndex(results);
         indexer.displayStats(startTime);
         process.exit(0);
@@ -206,6 +205,7 @@ export class Indexer {
             mappings: {
               properties: this.config.mappings,
             },
+            settings: this.config.settings,
           },
         },
         { ignore: [400] },
@@ -214,9 +214,9 @@ export class Indexer {
         if (body.acknowledged || body.status == 400)
           this.stats.createdIndices.add(indexName);
       } catch (e) {
-        console.log(`There was a problem creating index: ${indexName}`);
-        console.log(e);
-        process.exit();
+        console.error(`There was a problem creating index: ${indexName}`);
+        console.error(e);
+        process.exit(1);
       }
     }
   }
@@ -274,16 +274,79 @@ export class Indexer {
 }
 
 export interface IndexerConfig {
+
+  /**
+   * define the mappings to be used by the index. Usually elastic search will define these mappings automatically
+   * but you can define your own for advanced usage if the default mappings are not enough
+   * e.g.
+   * { 
+   *    location: { type: "geo_point" },
+   *    title: { type: "text" },
+   *    description: { 
+   *      type: "text" 
+   *      analyzer: "standard",
+   *      fields: {
+   *        english: {
+   *          type: "text",
+   *          analyzer: "custom_analyzer"
+   *        }
+   *      }
+   *    }
+   * },
+   */
   mappings?: { [key: string]: object };
+
+  /**
+   * This can be a MySQL query or a mongo filter
+   */
   query: string | any;
+  
+  /**
+   * The collection used for mongo queries
+   */
   collection?: string; // used for mongo collection queries
+
+  /**
+   * Alias for indexName
+   */
   index: string; //alias for indexName
+
+  /**
+   * This is the name of the elastic search index
+   */
   indexName?: string;
+
+  /**
+   * This is the number of documents/records to include in each bulk index request 
+   */
   batchSize?: number;
+
+  /**
+   * When using the {lastIndexedId} variable in a query (only for MySQL), this property defines the id column to use in the database
+   */
   id?: string;
+
+  /**
+   * If set to true, the indexer will only index properties that have been defined in the mappings property of the IndexerConfig
+   */
   explicitMapping?: boolean;
+
+  /**
+   * If set to true, the indexer will delete the existing index if it exists and create a new one before indexing data
+   **/
   reindex?: boolean;
+  
+  /**
+   * The reducer will receive the results of a query as an input and the output will be subsequently indexed
+   */
   useReducer?: boolean;
+
+  /**
+   * used for index settings such as defining analyzers: https://www.elastic.co/guide/en/elasticsearch/reference/7.7/configuring-analyzers.html
+   * see also: https://www.elastic.co/guide/en/elasticsearch/reference/7.7/index-modules.html
+   * this is passed to client.indices.create body property: https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#_indices_create
+   */
+  settings?: any, 
 }
 
 export const defaultConfig: IndexerConfig = {
@@ -292,8 +355,8 @@ export const defaultConfig: IndexerConfig = {
   explicitMapping: false,
   query: null,
   index: 'myelastic-index',
-  useReducer: false,
 };
+
 export interface GroupSet extends Set<string> {}
 export interface IndicesSet extends Set<string> {}
 export interface GroupedRow {
