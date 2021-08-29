@@ -28,7 +28,7 @@ export class Indexer {
 
   public constructor(config: IndexerConfig) {
     this.config = { ...defaultConfig, ...config, indexName: config.index };
-    this.client = new ElasticSearchClient({ node: process.env.elasticsearch_url });
+    this.client = new ElasticSearchClient({ node: this.config.elasticsearch_url || process.env.elasticsearch_url });
   }
   public async start() {
     const [indexer, startTime, query] = await this.init();
@@ -340,6 +340,11 @@ export interface IndexerConfig {
    * The reducer will receive the results of a query as an input and the output will be subsequently indexed
    */
   useReducer?: boolean;
+
+  /**
+   * Elasticsearch url here can override the one defined in the environment variable
+   */
+  elasticsearch_url?: string;
 
   /**
    * used for index settings such as defining analyzers: https://www.elastic.co/guide/en/elasticsearch/reference/7.7/configuring-analyzers.html
