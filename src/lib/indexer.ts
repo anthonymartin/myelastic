@@ -8,7 +8,6 @@ import { MongoDBSource } from './drivers/mongodb';
 import { DataSource } from './drivers/datasource';
 const humanizeDuration = require('humanize-duration');
 
-
 export class Indexer {
   private config: IndexerConfig;
   private client: ElasticSearchClient;
@@ -28,13 +27,20 @@ export class Indexer {
 
   public constructor(config: IndexerConfig) {
     this.config = { ...defaultConfig, ...config, indexName: config.index };
-    this.client = new ElasticSearchClient({ node: this.config.elasticsearch_url || process.env.elasticsearch_url });
+    this.client = new ElasticSearchClient({
+      node: this.config.elasticsearch_url || process.env.elasticsearch_url,
+      auth: process.env.elasticsearch_api_key
+        ? {
+            apiKey: process.env.elasticsearch_api_key,
+          }
+        : undefined,
+    });
   }
   public async start() {
     const [indexer, startTime, query] = await this.init();
     this.datasource.query(
       query,
-      async function(error, results) {
+      async function (error, results) {
         if (error) throw error;
         if (indexer.config.useReducer) {
           results = indexer.reduce(results);
@@ -73,12 +79,12 @@ export class Indexer {
    */
   private applyGroup(collection): GroupedCollection {
     const indexer = this;
-    const getIndexName = row => {
+    const getIndexName = (row) => {
       return this.grouperFn
         ? this.getIndex(this.grouperFn(row))
         : this.getIndex(null);
     };
-    const groupedCollection = collection.map(row => {
+    const groupedCollection = collection.map((row) => {
       if (this.config.explicitMapping == true) {
         row = pick(row, Object.keys(this.config.mappings));
       }
@@ -88,7 +94,7 @@ export class Indexer {
     return groupedCollection;
   }
   public indexByDate(field: string, format: string) {
-    this.grouperFn = row => {
+    this.grouperFn = (row) => {
       return `${moment(row[field]).format(format)}`;
     };
     return this;
@@ -113,14 +119,15 @@ export class Indexer {
     console.log(
       `Indexing batch ${this.stats.batchesIndexed + 1} | items in batch ${
         collection.length
-      } | total batches left ${this.stats.totalBatches -
-        (this.stats.batchesIndexed + 1)}`,
+      } | total batches left ${
+        this.stats.totalBatches - (this.stats.batchesIndexed + 1)
+      }`,
     );
   }
   private async doBulkIndex(collection: GroupedCollection, batch) {
     this.displayStatus(collection);
     const { body: bulkResponse } = await this.client.bulk({
-      refresh: "true",
+      refresh: 'true',
       body: flatten(collection),
     });
     this.handleResponse(bulkResponse, batch);
@@ -138,10 +145,10 @@ export class Indexer {
     try {
       const { body } = await this.client.indices.delete({ index: index });
       if (body.acknowledged == true) {
-       this.stats.deletedIndices.add(index);
-       console.log(`Deleted Index ${index}`);
+        this.stats.deletedIndices.add(index);
+        console.log(`Deleted Index ${index}`);
       }
-    } catch(e) {
+    } catch (e) {
       console.log('Could not delete index. Perhaps it does not exist.', e);
     }
   }
@@ -169,7 +176,7 @@ export class Indexer {
   }
   private applyMutations(collection) {
     if (this.mutators.length == 0) return collection;
-    const mutatedCollection = collection.map(row => {
+    const mutatedCollection = collection.map((row) => {
       for (const mutate of this.mutators) mutate(row);
       return row;
     });
@@ -274,16 +281,15 @@ export class Indexer {
 }
 
 export interface IndexerConfig {
-
   /**
    * define the mappings to be used by the index. Usually elastic search will define these mappings automatically
    * but you can define your own for advanced usage if the default mappings are not enough
    * e.g.
-   * { 
+   * {
    *    location: { type: "geo_point" },
    *    title: { type: "text" },
-   *    description: { 
-   *      type: "text" 
+   *    description: {
+   *      type: "text"
    *      analyzer: "standard",
    *      fields: {
    *        english: {
@@ -300,7 +306,7 @@ export interface IndexerConfig {
    * This can be a MySQL query or a mongo filter
    */
   query?: string | any;
-  
+
   /**
    * The collection used for mongo queries
    */
@@ -317,7 +323,7 @@ export interface IndexerConfig {
   indexName?: string;
 
   /**
-   * This is the number of documents/records to include in each bulk index request 
+   * This is the number of documents/records to include in each bulk index request
    */
   batchSize?: number;
 
@@ -335,7 +341,7 @@ export interface IndexerConfig {
    * If set to true, the indexer will delete the existing index if it exists and create a new one before indexing data
    **/
   reindex?: boolean;
-  
+
   /**
    * The reducer will receive the results of a query as an input and the output will be subsequently indexed
    */
@@ -351,7 +357,7 @@ export interface IndexerConfig {
    * see also: https://www.elastic.co/guide/en/elasticsearch/reference/7.7/index-modules.html
    * this is passed to client.indices.create body property: https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#_indices_create
    */
-  settings?: any, 
+  settings?: any;
 }
 
 export const defaultConfig: IndexerConfig = {

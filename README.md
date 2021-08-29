@@ -23,6 +23,7 @@ or
 
 ```ini
 elasticsearch_url=
+elasticsearch_api_key=
 
 // mysql
 mysql_host=
