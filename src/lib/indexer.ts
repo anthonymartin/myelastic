@@ -93,7 +93,7 @@ export class Indexer {
     };
     return this;
   }
-  private async bulkIndex(collection): Promise<this> {
+  public async bulkIndex(collection): Promise<this> {
     const batches = chunk(collection, this.config.batchSize).reverse();
     while (batches.length > 0) {
       const batch = this.getNextBatch(batches);
@@ -299,7 +299,7 @@ export interface IndexerConfig {
   /**
    * This can be a MySQL query or a mongo filter
    */
-  query: string | any;
+  query?: string | any;
   
   /**
    * The collection used for mongo queries
