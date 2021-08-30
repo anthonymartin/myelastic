@@ -141,7 +141,7 @@ export class Indexer {
     }
   }
 
-  private async deleteIndex(index) {
+  public async deleteIndex(index) {
     try {
       const { body } = await this.client.indices.delete({ index: index });
       if (body.acknowledged == true) {
