@@ -1,6 +1,6 @@
 {
   "name": "@myelastic/indexer",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "elasticsearch indexer for mysql",
   "main": "lib/indexer.js",
   "scripts": {
