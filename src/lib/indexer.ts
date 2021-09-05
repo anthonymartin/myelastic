@@ -16,6 +16,7 @@ export class Indexer {
   private reduce: Function;
   private grouperFn: Function;
   private mutators: Function[] = [];
+  private transformers: Function[] = [];
   private stats = {
     batchesIndexed: 0,
     recordsIndexed: 0,
@@ -141,7 +142,7 @@ export class Indexer {
     }
   }
 
-  public async deleteIndex(index) {
+  private async deleteIndex(index) {
     try {
       const { body } = await this.client.indices.delete({ index: index });
       if (body.acknowledged == true) {
@@ -159,7 +160,8 @@ export class Indexer {
    */
   private transform(collection): [GroupSet, GroupedCollection] {
     const mutatedCollection = this.applyMutations(collection);
-    const groupedCollection = this.applyGroup(mutatedCollection);
+    const transformedCollection = this.applyTransformers(collection);
+    const groupedCollection = this.applyGroup(transformedCollection);
     return [this.groups, groupedCollection];
   }
   private async generateQuery(): Promise<string> {
@@ -182,10 +184,26 @@ export class Indexer {
     });
     return mutatedCollection;
   }
+
+  private applyTransformers(collection) {
+    if (this.transformers.length == 0) return collection;
+
+    return this.transformers.reduce(
+      (rows, transform) => rows.map((row) => transform(row)),
+      collection,
+    );
+  }
+
   public addMutator(mutator): this {
     this.mutators.push(mutator);
     return this;
   }
+
+  public addTransformer(transformer: Function): this {
+    this.transformers.push(transformer);
+    return this;
+  }
+  
   private getIndex(group = null): string {
     if (!group) return `${this.config.indexName}`;
     return `${this.config.indexName}-${group}`;

@@ -1,6 +1,6 @@
-# [@myelastic/indexer - ElasticSearch Indexer for MySQL and MongoDB](https://github.com/anthonymartin/myelastic)
+# [@myelastic/indexer - ElasticSearch Indexer for MySQL, MongoDB and More](https://github.com/anthonymartin/myelastic)
 
-A simple but powerful way to create elasticsearch indexes from your MySQL and MongoDB data. This package will save you the hassle of writing your elasticsearch import scripts from scratch. This indexer offers a declarative configuration and easily extensible interface to make indexing data from MySQL or MongoDB a breeze.
+A simple but powerful way to create elasticsearch indexes from your MySQL and MongoDB data. This package will save you the hassle of writing your elasticsearch import scripts from scratch. This indexer offers a declarative configuration and easily extensible interface to make indexing data from MySQL, MongoDB or other arbitrary data sources a breeze.
 
 ## Features:
 
@@ -106,7 +106,7 @@ const config = {
 
 ### Mutators
 
-Every row of your query can be passed to a mutator function which allows you to transform the data before it is indexed.
+Every row of your query can be passed to a mutator function which allows you to mutate the row before it is indexed.
 
 ```javascript
 // our database has an IP, but let's also map the geolocation coordinates for that IP
@@ -117,6 +117,34 @@ const mutator = function (row) => {
 new Indexer(config)
   .addMutator(mutator)
   .start();
+```
+
+### Transformers
+
+Transformers receive as an input a row to be indexed and returns a transformed row.
+
+```javascript
+const transformer = function (row) => {
+  return {
+    ...row,
+    propertyA: row.propertyA.toUpperCase(),
+  }
+};
+
+new Indexer(config)
+  .addTransformer(transformer)
+  .start();
+```
+
+### `bulkIndex()` - Indexing Arbitrary Data
+
+The `start()` method is optional and is useful to iterate over a large database simply. If you would like to handle the flow control yourself you can use the `bulkIndex()` method.
+
+```javascript
+await new Indexer({ 
+  index: "my_index", 
+  batchSize: 1000 
+}).bulkIndex(collection);
 ```
 
 ### Indexing by Date
